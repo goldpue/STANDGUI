@@ -1,6 +1,6 @@
-local Ply = game.Players.LocalPlayer
-local Mouse = Ply:GetMouse()
-local GuiName = "StandGui"
+local OWNER = game.Players.LocalPlayer
+local Mouse = OWNER:GetMouse()
+local GuiName = "Seth | YBA"
 local GuiKeybind = "v"
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
@@ -188,7 +188,7 @@ end
 local UILibrary = {}
 
 function UILibrary.Load(GUITitle)
-	local TargetedParent = rs:IsStudio() and Ply:WaitForChild("PlayerGui") or CoreGuiService
+	local TargetedParent = rs:IsStudio() and OWNER:WaitForChild("PlayerGui") or CoreGuiService
 	
 	local FindOldInstance = TargetedParent:FindFirstChild(GUITitle)
 	
@@ -414,3 +414,378 @@ function UILibrary.Load(GUITitle)
 			end)
 		end		
 		local PageLibrary = {}
+		
+		function PageLibrary.Button(Text, Callback, Parent, Underline)
+			local ButtonContainer = Frame()
+			ButtonContainer.Name = Text.."BUTTON"
+			ButtonContainer.Size = UDim2.new(1,0,0,20)
+			ButtonContainer.BackgroundTransparency = 1
+			ButtonContainer.Parent = Parent or DisplayPage
+			
+			local ButtonForeground = RoundBox(RoundBoxes)
+			ButtonForeground.Name = "ButtonForeground"
+			ButtonForeground.Size = UDim2.new(1,0,1,0)
+			ButtonForeground.ImageColor3 = Color_1
+			ButtonForeground.Parent = ButtonContainer
+			
+			local ButtonIcon = ArrowIcon("ButtonIcon")
+			ButtonIcon.Parent = ButtonContainer
+			ButtonIcon.Rotation = -90
+			ButtonIcon.Position = UDim2.new(0,455,0,2)
+
+			if Underline then
+				local TextSize = TextService:GetTextSize(Text, 12, Enum.Font.Gotham, Vector2.new(0,0))
+			
+				local BottomEffect = Frame()
+				BottomEffect.Size = UDim2.new(0,TextSize.X,0,1)
+				BottomEffect.Position = UDim2.new(0.5,(-TextSize.X/2)-1,1,-1)
+				BottomEffect.BackgroundColor3 = Color3.fromRGB(255,255,255)
+				BottomEffect.BackgroundTransparency = 0.5
+				BottomEffect.Parent = ButtonForeground
+			end
+			
+			local HiddenButton = TextButton(Text, 12)
+			HiddenButton.Parent = ButtonForeground
+			
+			HiddenButton.MouseButton1Down:Connect(function()
+				Callback()
+                spawn(function()
+                    Tween(ButtonIcon, {Rotation = 90})
+                    Tween1(ButtonIcon, {Position = UDim2.new(0,3,0,2)})
+                    Tween(ButtonIcon, {Rotation = -90})
+                    Tween(ButtonIcon, {Position = UDim2.new(0,455,0,2)})
+                end)
+				Tween(ButtonForeground, {ImageColor3 = Color_3})
+				Tween(HiddenButton, {TextTransparency = 0.5})
+				task.wait(.1)
+				Tween(ButtonForeground, {ImageColor3 = Color_1})
+				Tween(HiddenButton, {TextTransparency = 0})
+			end)
+		end
+		
+		function PageLibrary.Label(Text)
+			local LabelContainer = Frame()
+			LabelContainer.Name = Text.."LABEL"
+			LabelContainer.Size = UDim2.new(1,0,0,20)
+			LabelContainer.BackgroundTransparency = 1
+			LabelContainer.Parent = DisplayPage
+			
+			local LabelForeground = RoundBox(RoundBoxes)
+			LabelForeground.Name = "LabelForeground"
+			LabelForeground.ImageColor3 = Color_1
+			LabelForeground.Size = UDim2.new(1,0,1,0)
+			LabelForeground.Parent = LabelContainer
+			
+			local HiddenLabel = TextLabel(Text, 12)
+			HiddenLabel.Parent = LabelForeground
+		end
+		
+		function PageLibrary.Dropdown(Text, ConfigurationArray, Callback)
+			local DropdownArray = ConfigurationArray or {}
+			
+			local DropdownToggle = false
+			
+			local DropdownContainer = Frame()
+			DropdownContainer.Size = UDim2.new(1,0,0,20)
+			DropdownContainer.Name = Text.."DROPDOWN"
+			DropdownContainer.BackgroundTransparency = 1
+			DropdownContainer.Parent = DisplayPage
+			
+			local DropdownForeground = RoundBox(RoundBoxes)
+			DropdownForeground.ClipsDescendants = true
+			DropdownForeground.ImageColor3 = Color_1
+			DropdownForeground.Size = UDim2.new(1,0,1,0)
+			DropdownForeground.Parent = DropdownContainer
+			
+			local DropdownExpander = DropdownIcon(true)
+			DropdownExpander.Parent = DropdownForeground
+			
+			local DropdownLabel = TextLabel(Text, 12)
+			DropdownLabel.Size = UDim2.new(1,0,0,20)
+			DropdownLabel.Parent = DropdownForeground
+			
+			local DropdownFrame = Frame()
+			DropdownFrame.Position = UDim2.new(0,0,0,20)
+			DropdownFrame.BackgroundTransparency = 1
+			DropdownFrame.Size = UDim2.new(1,0,0,#DropdownArray*20)
+			DropdownFrame.Parent = DropdownForeground
+			
+			local DropdownList = Instance.new("UIListLayout")
+			DropdownList.Parent = DropdownFrame
+			
+			for OptionIndex, Option in next, DropdownArray do
+				PageLibrary.Button(Option, function()
+					Callback(Option)
+					DropdownLabel.Text = Text..": "..Option
+				end, DropdownFrame, OptionIndex < #DropdownArray)
+			end
+			
+			DropdownExpander.MouseButton1Down:Connect(function()
+				DropdownToggle = not DropdownToggle
+				Tween(DropdownContainer, {Size = DropdownToggle and UDim2.new(1,0,0,20+(#DropdownArray*20)) or UDim2.new(1,0,0,20)})
+				Tween(DropdownExpander, {Rotation = DropdownToggle and 135 or 0})
+			end)
+		end
+		
+		function PageLibrary.ColourPicker(Text, DefaultColour, Callback)
+			local DefaultColour = DefaultColour or Color3.fromRGB(255,255,255)
+			
+			local ColourDictionary = {
+				white = Color3.fromRGB(255,255,255),
+				black = Color3.fromRGB(0,0,0),
+				red = Color3.fromRGB(255,0,0),
+				green = Color3.fromRGB(0,255,0),
+				blue = Color3.fromRGB(0,0,255)
+			}
+			
+			if typeof(DefaultColour) == "table" then
+				DefaultColour = Color3.fromRGB(DefaultColour[1] or 255, DefaultColour[2] or 255, DefaultColour[3] or 255)
+			elseif typeof(DefaultColour) == "string" then
+				DefaultColour = ColourDictionary[DefaultColour:lower()] or ColourDictionary["white"]
+			end
+			
+			local PickerContainer = Frame()
+			PickerContainer.ClipsDescendants = true
+			PickerContainer.Size = UDim2.new(1,0,0,20)
+			PickerContainer.Name = Text.."COLOURPICKER"
+			PickerContainer.BackgroundTransparency = 1
+			PickerContainer.Parent = DisplayPage
+			
+			local ColourTracker = Instance.new("Color3Value")
+			ColourTracker.Value = DefaultColour
+			ColourTracker.Parent = PickerContainer
+			
+			local PickerLeftSide, PickerRightSide, PickerFrame = RoundBox(RoundBoxes), RoundBox(RoundBoxes), RoundBox(RoundBoxes)
+			
+			PickerLeftSide.Size = UDim2.new(1,-22,1,0)
+			PickerLeftSide.ImageColor3 = Color_1
+			PickerLeftSide.Parent = PickerContainer
+			
+			PickerRightSide.Size = UDim2.new(0,20,1,0)
+			PickerRightSide.Position = UDim2.new(1,-20,0,0)
+			PickerRightSide.ImageColor3 = DefaultColour
+			PickerRightSide.Parent = PickerContainer
+			
+			PickerFrame.ImageColor3 = Color_1
+			PickerFrame.Size = UDim2.new(1,-22,0,60)
+			PickerFrame.Position = UDim2.new(0,0,0,20)
+			PickerFrame.Parent = PickerContainer
+			
+			local PickerList = Instance.new("UIListLayout")
+			PickerList.SortOrder = Enum.SortOrder.LayoutOrder
+			PickerList.Parent = PickerFrame
+			
+			local RedPicker = PageLibrary.Slider("R", {Min = 0, Max = 255, Def = ColourTracker.Value.R * 255}, function(Value)
+				ColourTracker.Value = Color3.fromRGB(Value, ColourTracker.Value.G * 255, ColourTracker.Value.B * 255)
+				Callback(ColourTracker.Value)
+			end, PickerFrame)
+			
+			local BluePicker = PageLibrary.Slider("G", {Min = 0, Max = 255, Def = ColourTracker.Value.G * 255}, function(Value)
+				ColourTracker.Value = Color3.fromRGB(ColourTracker.Value.R * 255, Value, ColourTracker.Value.B * 255)
+				Callback(ColourTracker.Value)
+			end, PickerFrame)
+			
+			local GreenPicker = PageLibrary.Slider("B", {Min = 0, Max = 255, Def = ColourTracker.Value.B * 255}, function(Value)
+				ColourTracker.Value = Color3.fromRGB(ColourTracker.Value.R * 255, ColourTracker.Value.G * 255, Value)
+				Callback(ColourTracker.Value)
+			end, PickerFrame)
+			
+			local EffectLeft, EffectRight = Frame(), Frame()
+			
+			EffectLeft.BackgroundColor3 = Color_1
+			EffectLeft.Position = UDim2.new(1,-5,0,0)
+			EffectLeft.Size = UDim2.new(0,5,1,0)
+			EffectLeft.Parent = PickerLeftSide
+			
+			EffectRight.BackgroundColor3 = DefaultColour
+			EffectRight.Size = UDim2.new(0,5,1,0)
+			EffectRight.Parent = PickerRightSide
+			
+			local PickerLabel = TextLabel(Text, 12)
+			PickerLabel.Size = UDim2.new(1,0,0,20)
+			PickerLabel.Parent = PickerLeftSide
+			
+			ColourTracker:GetPropertyChangedSignal("Value"):Connect(function()
+				local NewValue = ColourTracker.Value
+				EffectRight.BackgroundColor3 = NewValue
+				PickerRightSide.ImageColor3 = NewValue
+			end)
+			
+			local PickerToggle = false
+			
+			local PickerButton = TextButton("")
+			PickerButton.Parent = PickerRightSide
+			
+			PickerButton.MouseButton1Down:Connect(function()
+				PickerToggle = not PickerToggle
+				Tween(PickerContainer, {Size = PickerToggle and UDim2.new(1,0,0,80) or UDim2.new(1,0,0,20)})
+			end)
+		end
+		
+		function PageLibrary.Slider(Text, ConfigurationDictionary, Callback, Parent)
+			local Configuration = ConfigurationDictionary
+			local Minimum = Configuration.Minimum or Configuration.minimum or Configuration.Min or Configuration.min
+			local Maximum = Configuration.Maximum or Configuration.maximum or Configuration.Max or Configuration.max
+			local Default = Configuration.Default or Configuration.default or Configuration.Def or Configuration.def
+			
+			if Minimum > Maximum then
+				local StoreValue = Minimum
+				Minimum = Maximum
+				Maximum = StoreValue
+			end
+			
+			Default = math.clamp(Default, Minimum, Maximum)
+			
+			local DefaultScale = Default/Maximum
+			
+			local SliderContainer = Frame()
+			SliderContainer.Name = Text.."SLIDER"
+			SliderContainer.Size = UDim2.new(1,0,0,20)
+			SliderContainer.BackgroundTransparency = 1
+			SliderContainer.Parent = Parent or DisplayPage
+			
+			local SliderForeground = RoundBox(RoundBoxes)
+			SliderForeground.Name = "SliderForeground"
+			SliderForeground.ImageColor3 = Color_1
+			SliderForeground.Size = UDim2.new(1,0,1,0)
+			SliderForeground.Parent = SliderContainer
+			
+			local SliderIcon = ArrowIcon("SliderIcon")
+            SliderIcon.Parent = SliderContainer
+			SliderIcon.Position = UDim2.new(0,6,0,2)
+			SliderIcon.Rotation = 90
+
+			local SliderButton = TextButton(Text..": "..Default)
+			SliderButton.Size = UDim2.new(1,0,1,0)
+			SliderButton.ZIndex = 6
+			SliderButton.Parent = SliderForeground
+			
+			local SliderFill = RoundBox(RoundBoxes)
+			SliderFill.Size = UDim2.new(DefaultScale,0,1,0)
+			SliderFill.ImageColor3 = Color_4
+			SliderFill.ZIndex = 5
+			SliderFill.ImageTransparency = 0.7
+			SliderFill.Parent = SliderButton
+			
+			SliderButton.MouseButton1Down:Connect(function()
+				Tween(SliderFill, {ImageTransparency = 0.5})
+				local X, Y, XScale, YScale = GetXY(SliderButton)
+				local Value = math.floor(Minimum + ((Maximum - Minimum) * XScale))
+				Callback(Value)
+				SliderButton.Text = Text..": "..tostring(Value)
+				local TargetSize = UDim2.new(XScale,0,1,0)
+				Tween(SliderFill, {Size = TargetSize})
+				local SliderMove, SliderKill
+				SliderMove = Mouse.Move:Connect(function()
+					Tween(SliderFill, {ImageTransparency = 0.5})
+					local X, Y, XScale, YScale = GetXY(SliderButton)
+					local Value = math.floor(Minimum + ((Maximum - Minimum) * XScale))
+					Callback(Value)
+					Tween(SliderIcon, {Rotation = tonumber(Value)*50})
+					SliderButton.Text = Text..": "..tostring(Value)
+					local TargetSize = UDim2.new(XScale,0,1,0)
+					Tween(SliderFill, {Size = TargetSize})
+				end)
+				SliderKill = UserInputService.InputEnded:Connect(function(UserInput)
+					if UserInput.UserInputType == Enum.UserInputType.MouseButton1 then
+						Tween(SliderFill, {ImageTransparency = 0.7})
+						Tween(SliderIcon, {Rotation = 90})
+						SliderMove:Disconnect()
+						SliderKill:Disconnect()
+					end
+				end)
+			end)
+		end
+		
+		function PageLibrary.Toggle(Text, Callback)
+			local ThisToggle = false
+			
+			local ToggleContainer = Frame()
+			ToggleContainer.Name = Text.."TOGGLE"
+			ToggleContainer.Size = UDim2.new(1,0,0,20)
+			ToggleContainer.BackgroundTransparency = 1
+			ToggleContainer.Parent = DisplayPage
+			
+			local ToggleLeftSide, ToggleRightSide, EffectFrame, RightTick = RoundBox(RoundBoxes), RoundBox(RoundBoxes), Frame(), TickIcon()
+			local FlatLeft, FlatRight = Frame(), Frame()
+			
+			ToggleLeftSide.Size = UDim2.new(1,-22,1,0)
+			ToggleLeftSide.ImageColor3 = Color_1
+			ToggleLeftSide.Parent = ToggleContainer
+			
+			ToggleRightSide.Position = UDim2.new(1,-20,0,0)
+			ToggleRightSide.Size = UDim2.new(0,20,1,0)
+			ToggleRightSide.ImageColor3 = Color_1
+			ToggleRightSide.Parent = ToggleContainer
+			
+			FlatLeft.BackgroundColor3 = Color_1
+			FlatLeft.Size = UDim2.new(0,5,1,0)
+			FlatLeft.Position = UDim2.new(1,-5,0,0)
+			FlatLeft.Parent = ToggleLeftSide
+			
+			FlatRight.BackgroundColor3 = Color_1
+			FlatRight.Size = UDim2.new(0,5,1,0)
+			FlatRight.Parent = ToggleRightSide
+			
+			EffectFrame.BackgroundColor3 = ThisToggle and Color3.fromRGB(0,255,109) or Color3.fromRGB(255,160,160)
+			EffectFrame.Position = UDim2.new(1,-22,0.2,0)
+			EffectFrame.Size = UDim2.new(0,2,0.6,0)
+			EffectFrame.Parent = ToggleContainer
+			
+			RightTick.ImageTransparency = ThisToggle and 0 or 1
+			RightTick.Parent = ToggleRightSide
+			
+			local ToggleButton = TextButton("     "..Text, 12)
+			ToggleButton.Name = "ToggleButton"
+			ToggleButton.Size = UDim2.new(1,0,1,0)
+			ToggleButton.Parent = ToggleLeftSide
+
+			local ToggleIcons = ArrowIcon("ToggleIcon")
+            ToggleIcons.Parent = EffectFrame
+			ToggleIcons.Position = UDim2.new(0,-447,-.28,2)
+			ToggleIcons.Rotation = 90
+			
+			ToggleButton.MouseButton1Down:Connect(function()
+				ThisToggle = not ThisToggle
+				Tween(EffectFrame, {BackgroundColor3 = ThisToggle and Color3.fromRGB(0,255,109) or Color3.fromRGB(255,160,160)})
+                Tween(ToggleIcons, {Rotation = ThisToggle and -90 or 90})
+                Tween(ToggleIcons, {Position = ThisToggle and UDim2.new(0,-20,-.28,2) or UDim2.new(0,-447,-.28,2)})
+				Tween(RightTick, {ImageTransparency = ThisToggle and 0 or 1})
+				Callback(ThisToggle)
+			end)	
+
+		end
+		
+		function PageLibrary.Textboxes(Text,Callback)
+            local TextboxContainer = Frame()
+			TextboxContainer.Name = Text.."LABEL"
+			TextboxContainer.Size = UDim2.new(1,0,0,20)
+			TextboxContainer.BackgroundTransparency = 1
+			TextboxContainer.Parent = DisplayPage
+
+            local TextboxForeground = RoundBox(RoundBoxes)
+			TextboxForeground.Name = Text.."Label"
+			TextboxForeground.ImageColor3 = Color_1
+			TextboxForeground.Size = UDim2.new(1,0,0,20)
+			TextboxForeground.Parent = TextboxContainer
+            
+            local SearchIcon = SearchIcon()
+			SearchIcon.Parent = TextboxForeground
+            SearchIcon.Position = UDim2.new(0,449,0,2)
+            
+			local Textbox = TextBox(Text)
+			Textbox.Name = "Textboxes"
+			Textbox.Position = UDim2.new(0,10,0,0)
+			Textbox.Size = UDim2.new(1,-0,1,0)
+			Textbox.TextTransparency = 0.5
+			Textbox.TextXAlignment = Enum.TextXAlignment.Left
+			Textbox.Parent = TextboxForeground
+			
+			Textbox.FocusLost:Connect(function()Callback(Textbox.Text)spawn(function()Tween1(SearchIcon, {Rotation = 360})SearchIcon.Rotation = 0 end)end)
+        end
+
+		return PageLibrary
+	end
+	
+	return TabLibrary
+end
